@@ -182,6 +182,17 @@ namespace Zu.Chrome.DriverCore
         {
             if (_asyncChromeDriver != null)
                 await _asyncChromeDriver.CheckConnected().ConfigureAwait(false);
+
+            // In some cases only the first char inserted and the rest is ignored.
+            // But InsertText works well, so when no special keys just using InsertText.
+            if (!keys.Any(k => Keys.KeyToVirtualKeyCode.ContainsKey(k)))
+            {
+                var input = DevTools.Input;
+                var command = new InsertTextCommand { Text = keys };
+                await input.InsertText(command, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
             foreach (var key in keys)
             {
                 //var index = (int)key - 0xE000U; > 0

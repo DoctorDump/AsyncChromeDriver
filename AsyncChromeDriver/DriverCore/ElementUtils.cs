@@ -48,7 +48,7 @@ namespace Zu.Chrome.DriverCore
 
         public async Task<string> ScrollElementIntoView(string elementId, CancellationToken cancellationToken = new CancellationToken())
         {
-            var func = "function(elem) { return elem.scrollIntoView(); }";
+            var func = "function(elem) { return elem.scrollIntoView({block: 'center', inline: 'nearest'}); }";
             var res = await WebView.CallFunction(func, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
             var value = res?.Result?.Value as JToken;
             var exception = ResultValueConverter.ToWebBrowserException(value);
