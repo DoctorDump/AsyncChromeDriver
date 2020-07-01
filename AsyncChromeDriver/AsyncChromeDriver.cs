@@ -8,6 +8,7 @@ using Zu.WebBrowser.BasicTypes;
 using Zu.WebBrowser.AsyncInteractions;
 using System.IO;
 using Zu.Chrome.DevTools;
+using Zu.ChromeDevTools;
 using Zu.WebBrowser.BrowserOptions;
 
 namespace Zu.Chrome
@@ -154,7 +155,7 @@ namespace Zu.Chrome
         {
         }
 
-        public AsyncChromeDriver(ChromeDriverConfig config)
+        public AsyncChromeDriver(ChromeDriverConfig config, ILogger<ChromeSession> logger = null)
         {
             Config = config;
             if (Config.Port == 0)
@@ -162,9 +163,9 @@ namespace Zu.Chrome
             if (Config.DoOpenWSProxy || Config.DoOpenBrowserDevTools) {
                 if (Config.DevToolsConnectionProxyPort == 0)
                     Config.DevToolsConnectionProxyPort = 15000 + _rnd.Next(2000);
-                DevTools = new BrowserDevTools.ChromeDevToolsConnectionProxy(Port, Config.DevToolsConnectionProxyPort, Config.WSProxyConfig);
+                DevTools = new BrowserDevTools.ChromeDevToolsConnectionProxy(Port, Config.DevToolsConnectionProxyPort, Config.WSProxyConfig, logger);
             } else
-                DevTools = new ChromeDevToolsConnection(Port);
+                DevTools = new ChromeDevToolsConnection(Port, logger);
             CreateDriverCore();
         }
 

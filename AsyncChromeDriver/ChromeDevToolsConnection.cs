@@ -12,6 +12,7 @@ namespace Zu.Chrome
     {
         private bool _isDisconnected;
         private ChromeSession _session;
+        protected readonly ILogger<ChromeSession> _logger;
 
         public int Port {
             get;
@@ -72,16 +73,17 @@ namespace Zu.Chrome
         public ChromeDevTools.HeapProfiler.HeapProfilerAdapter HeapProfiler => Session.HeapProfiler;
         #endregion
 
-        public ChromeDevToolsConnection(int port = 5999)
+        public ChromeDevToolsConnection(int port = 5999, ILogger<ChromeSession> logger = null)
         {
             Port = port;
+            _logger = logger;
         }
 
         public virtual async Task Connect()
         {
             var sessions = await GetSessions(Port).ConfigureAwait(false);
             var endpointUrl = sessions.FirstOrDefault(s => s.Type == "page")?.WebSocketDebuggerUrl;
-            Session = new ChromeSession(endpointUrl);
+            Session = new ChromeSession(_logger, endpointUrl);
         }
 
         // todo check
