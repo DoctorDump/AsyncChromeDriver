@@ -48,7 +48,8 @@ namespace Zu.Chrome.DriverCore
 
         public async Task<string> ScrollElementIntoView(string elementId, CancellationToken cancellationToken = new CancellationToken())
         {
-            var func = "function(elem) { return elem.scrollIntoView(); }";
+            // center is used because some overlays (like navigation bars or 'Accept our cookie policy' messaged) may hide target element.
+            var func = "function(elem) { return elem.scrollIntoView({block: 'center', inline: 'nearest'}); }";
             var res = await WebView.CallFunction(func, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
             var value = res?.Result?.Value as JToken;
             var exception = ResultValueConverter.ToWebBrowserException(value);

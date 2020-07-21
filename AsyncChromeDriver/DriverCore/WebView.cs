@@ -182,6 +182,15 @@ namespace Zu.Chrome.DriverCore
         {
             if (_asyncChromeDriver != null)
                 await _asyncChromeDriver.CheckConnected().ConfigureAwait(false);
+
+            // Sometimes only first symbol entered with DispatchKeyEvent and the rest symbols are ignored for unknown reason (maybe some additional page script works incorrectly)
+            // But InsertText works correctly!
+            if (!keys.Any(k => Keys.KeyToVirtualKeyCode.ContainsKey(k)))
+            {
+                await DevTools.Input.InsertText(new InsertTextCommand { Text = keys }, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
             foreach (var key in keys)
             {
                 //var index = (int)key - 0xE000U; > 0
@@ -200,15 +209,23 @@ namespace Zu.Chrome.DriverCore
                     //{
                     if (virtualKeyCode == 0)
                         continue;
-                    var res = await DevTools.Input.DispatchKeyEvent(new DispatchKeyEventCommand{Type = "rawKeyDown", //NativeVirtualKeyCode = virtualKeyCode,
- WindowsVirtualKeyCode = virtualKeyCode, }, cancellationToken).ConfigureAwait(false);
-                    await DevTools.Input.DispatchKeyEvent(new DispatchKeyEventCommand{Type = "keyUp", //NativeVirtualKeyCode = virtualKeyCode,
- WindowsVirtualKeyCode = virtualKeyCode, }, cancellationToken).ConfigureAwait(false);
-                //}
+                    var res = await DevTools.Input.DispatchKeyEvent(new DispatchKeyEventCommand
+                    {
+                        Type = "rawKeyDown", //NativeVirtualKeyCode = virtualKeyCode,
+                        WindowsVirtualKeyCode = virtualKeyCode,
+                    }, cancellationToken).ConfigureAwait(false);
+                    await DevTools.Input.DispatchKeyEvent(new DispatchKeyEventCommand
+                    {
+                        Type = "keyUp", //NativeVirtualKeyCode = virtualKeyCode,
+                        WindowsVirtualKeyCode = virtualKeyCode,
+                    }, cancellationToken).ConfigureAwait(false);
+                    //}
                 }
                 else
                 {
-                    await DevTools.Input.DispatchKeyEvent(new DispatchKeyEventCommand{Type = "char", Text = Convert.ToString(key, CultureInfo.InvariantCulture)}, cancellationToken).ConfigureAwait(false);
+                    await DevTools.Input
+                        .DispatchKeyEvent(new DispatchKeyEventCommand { Type = "char", Text = Convert.ToString(key, CultureInfo.InvariantCulture) },
+                            cancellationToken).ConfigureAwait(false);
                 }
             }
         }
