@@ -219,7 +219,7 @@ namespace Zu.Chrome.DriverCore
                         Type = "keyUp", //NativeVirtualKeyCode = virtualKeyCode,
                         WindowsVirtualKeyCode = virtualKeyCode,
                     }, cancellationToken).ConfigureAwait(false);
-                    //}
+                //}
                 }
                 else
                 {

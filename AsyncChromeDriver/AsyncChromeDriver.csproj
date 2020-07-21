@@ -12,6 +12,9 @@
     <PackageTags>Chrome DevTools AsyncChromeDriver AsyncWebDriver WebDriver</PackageTags>
     <PackageReleaseNotes>Protocol r655971 on May 2, 2019 (Chrome 74)</PackageReleaseNotes>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   
   <!-- Conditionally obtain references for the .NET Framework 4.0 target -->

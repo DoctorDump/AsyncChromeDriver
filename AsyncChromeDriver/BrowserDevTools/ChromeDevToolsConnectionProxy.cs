@@ -18,13 +18,13 @@ namespace Zu.Chrome.BrowserDevTools
 
         public ProxyWS Proxy  { get; private set; }
 
-        public ChromeDevToolsConnectionProxy(int port = 5999, int port2 = 5888) : base(port)
+        public ChromeDevToolsConnectionProxy(int port = 5999, int port2 = 5888, ChromeDevTools.ILogger<ChromeSession> logger = null) : base(port, logger)
         {
             Port2 = port2;
         }
 
         static Random _rnd = new Random();
-        public ChromeDevToolsConnectionProxy(int port = 5999, int port2 = 5888, ChromeWSProxyConfig wsProxyConfig = null) : this(port, port2)
+        public ChromeDevToolsConnectionProxy(int port = 5999, int port2 = 5888, ChromeWSProxyConfig wsProxyConfig = null, ChromeDevTools.ILogger<ChromeSession> logger = null) : this(port, port2, logger)
         {
             _wsProxyConfig = wsProxyConfig ?? new ChromeWSProxyConfig();
             if (_wsProxyConfig.HttpServerPort == 0)
@@ -49,7 +49,7 @@ namespace Zu.Chrome.BrowserDevTools
             }
 
             _proxyEndpointUrl = await OpenProxyWS(endpointUrl).ConfigureAwait(false);
-            Session = new ChromeSession(_proxyEndpointUrl);
+            Session = new ChromeSession(_logger, _proxyEndpointUrl);
         }
 
         private async Task<string> OpenProxyWS(string endpointUrl)
