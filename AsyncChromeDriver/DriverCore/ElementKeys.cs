@@ -6,7 +6,7 @@ namespace Zu.Chrome.DriverCore
     public class ElementKeys
     {
         public const string ElementKey = "ELEMENT";
-        public const string ElementKeyW3C = "element-6066-11e4-a52e-4f735466cecf";
+        public const string ElementKeyW3C = "element-e22b-47d8-b2a9-edd845c1ab2d";
 
 
     }

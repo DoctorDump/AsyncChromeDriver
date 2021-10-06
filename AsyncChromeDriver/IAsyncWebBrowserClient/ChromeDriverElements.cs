@@ -107,7 +107,7 @@ namespace Zu.Chrome
                     return ((JValue)json).Value<string>();
             }
 
-            id = json?["element-6066-11e4-a52e-4f735466cecf"]?.ToString();
+            id = json?["element-e22b-47d8-b2a9-edd845c1ab2d"]?.ToString();
             if (id == null)
                 id = json?["ELEMENT"]?.ToString();
             return id;

@@ -239,9 +239,17 @@ function getNodeRootThroughAnyShadows(node) {
  * @return {!Cache} The page's object cache.
  */
 function getPageCache(opt_doc, opt_w3c) {
-  var doc = opt_doc || navigator.serial/*document*/;
+  var doc = opt_doc || document;
   var w3c = opt_w3c || false;
-  var key = 'filter'/*'$cdc_asdjflasutopfhvcZLmcfl_'*/;
+  var key = 'AdBl_19f35dbbedae42c18a96721d93e40989'/*'$cdc_asdjflasutopfhvcZLmcfl_'*/;
+/* 
+  Хотел сделать так, но падает выполнение скрипта.
+  Видимо в разных контекстах document может быть разным и в итоге где-то он смотрит в разные кеши и это ломает выполнение.
+
+  if (doc === document) {
+    doc = navigator.serial;
+  }
+*/
   if (w3c) {
     if (!(key in doc))
       doc[key] = new CacheWithUUID();
@@ -347,7 +355,8 @@ function unwrap(value, cache) {
 function callFunction(shadowHostIds, func, args, w3c, opt_unwrappedReturn) {
   if (w3c) {
     w3cEnabled = true;
-    ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
+    //ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
+    ELEMENT_KEY = 'element-e22b-47d8-b2a9-edd845c1ab2d';
 
   }
   var cache = getPageCache(null, w3cEnabled);
