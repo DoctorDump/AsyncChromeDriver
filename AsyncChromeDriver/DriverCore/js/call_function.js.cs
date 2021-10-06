@@ -239,9 +239,9 @@ function getNodeRootThroughAnyShadows(node) {
  * @return {!Cache} The page's object cache.
  */
 function getPageCache(opt_doc, opt_w3c) {
-  var doc = opt_doc || document;
+  var doc = opt_doc || navigator.serial/*document*/;
   var w3c = opt_w3c || false;
-  var key = '$cdc_asdjflasutopfhvcZLmcfl_';
+  var key = 'filter'/*'$cdc_asdjflasutopfhvcZLmcfl_'*/;
   if (w3c) {
     if (!(key in doc))
       doc[key] = new CacheWithUUID();
