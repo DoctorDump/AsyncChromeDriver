@@ -32,7 +32,16 @@ namespace Zu.Chrome.DriverCore
         public async Task<bool> VerifyElementClickable(string elementId, WebPoint location, CancellationToken cancellationToken = new CancellationToken())
         {
             var res = await WebView.CallFunction(atoms.IS_ELEMENT_CLICKABLE, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}, {WebPointToJsonString(location)}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
-            //todo add exceptions
+            if (res?.ExceptionDetails != null)
+            {
+                throw new WebBrowserException(
+                    $"IS_ELEMENT_CLICKABLE failed\n" +
+                    $"{res.ExceptionDetails.Text}\n" +
+                    $"Line {res.ExceptionDetails.LineNumber}:{res.ExceptionDetails.ColumnNumber}\n" +
+                    $"Stack:\n" +
+                    $"{res.ExceptionDetails.StackTrace}",
+                    "invalid element state");
+            }
             return (res?.Result?.Value as JObject)?["value"]?["clickable"]?.Value<bool>() == true;
         }
 
@@ -63,12 +72,25 @@ namespace Zu.Chrome.DriverCore
             await ScrollElementIntoView(elementId, cancellationToken).ConfigureAwait(false);
             var res = await WebView.CallFunction(atoms.GET_LOCATION_IN_VIEW, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}, {center.ToString().ToLower()}, {WebRectToJsonString(region)}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
             var location = ResultValueConverter.ToWebPoint(res?.Result?.Value);
+            if (location == null)
+            {
+                if (res?.ExceptionDetails != null)
+                    throw new WebBrowserException(
+                        $"GET_LOCATION_IN_VIEW failed\n" +
+                        $"{res.ExceptionDetails.Text}\n" +
+                        $"Line {res.ExceptionDetails.LineNumber}:{res.ExceptionDetails.ColumnNumber}\n" +
+                        $"Stack:\n" +
+                        $"{res.ExceptionDetails.StackTrace}",
+                        "invalid element state");
+                throw new WebBrowserException("Failed to get location in view on the current page view", "invalid element state");
+            }
+
             if (clickableElementId != null)
             {
                 var middle = location.Offset(region.Width / 2, region.Height / 2);
                 var isClickable = await VerifyElementClickable(clickableElementId, middle, cancellationToken).ConfigureAwait(false);
                 if (!isClickable)
-                    return null;
+                    throw new WebBrowserException("Element is not clickable on the current page view", "invalid element state");
             }
 
             return location;
@@ -113,12 +135,10 @@ namespace Zu.Chrome.DriverCore
             {
                 var rect = await GetElementRegion(targetElementId, cancellationToken).ConfigureAwait(false);
                 var location = await ScrollElementRegionIntoView(targetElementId, rect, true, elementId, cancellationToken).ConfigureAwait(false);
-                if (location == null) 
-                    return null; // Element is not visible or is not clickable
                 return location.Offset(rect.Width / 2, rect.Height / 2);
             }
 
-            return null;
+            throw new WebBrowserException("Element is not displayed on the current page view", "invalid element state");
         }
 
         public async Task<WebRect> GetElementRegion(string elementId, CancellationToken cancellationToken = new CancellationToken())
