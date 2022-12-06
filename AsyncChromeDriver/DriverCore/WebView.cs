@@ -96,14 +96,14 @@ namespace Zu.Chrome.DriverCore
         CancellationToken cancellationToken = default (CancellationToken))
         {
             var res = await EvaluateScript(expression, frame, false, cancellationToken).ConfigureAwait(false);
-            return res?.Result?.ObjectId;
+            return ResultValueConverter.GetResultOrThrow(res).ObjectId;
         }
 
         public async Task<string> EvaluateScriptAndGetObjectInContext(string expression, long ? contextId = null, //bool returnByValue = true,
         CancellationToken cancellationToken = default (CancellationToken))
         {
             var res = await EvaluateScriptInContext(expression, contextId, false, cancellationToken).ConfigureAwait(false);
-            return res?.Result?.ObjectId;
+            return ResultValueConverter.GetResultOrThrow(res).ObjectId;
         }
 
         public async Task<string> GetUrl(CancellationToken cancellationToken = default (CancellationToken))

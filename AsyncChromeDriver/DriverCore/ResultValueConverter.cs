@@ -2,12 +2,31 @@
 
 using System;
 using Newtonsoft.Json.Linq;
+using Zu.ChromeDevTools.Runtime;
 using Zu.WebBrowser.BasicTypes;
 
 namespace Zu.Chrome.DriverCore
 {
     internal class ResultValueConverter
     {
+        internal static RemoteObject GetResultOrThrow(EvaluateCommandResponse res)
+        {
+            if (res == null)
+                throw new ApplicationException("EvaluateCommandResponse is null");
+            if (res.ExceptionDetails != null)
+            {
+                throw new ApplicationException(
+                    $"EvaluateCommand failed\n" +
+                    $"{res.ExceptionDetails.Text}\n" +
+                    $"Line {res.ExceptionDetails.LineNumber}:{res.ExceptionDetails.ColumnNumber}\n" +
+                    $"Stack:\n" +
+                    $"{res.ExceptionDetails.StackTrace}");
+            }
+            if (res.Result == null)
+                throw new ApplicationException("EvaluateCommandResponse.Result is null");
+            return res.Result;
+        }
+
         internal static WebPoint ToWebPoint(object value)
         {
             var res = (value as JObject)?["value"];

@@ -29,20 +29,19 @@ namespace Zu.Chrome.DriverCore
             WebView = webView;
         }
 
-        public async Task<bool> VerifyElementClickable(string elementId, WebPoint location, CancellationToken cancellationToken = new CancellationToken())
+        public async Task<(bool Clickable, string Message)> VerifyElementClickable(string elementId, WebPoint location, CancellationToken cancellationToken = new CancellationToken())
         {
             var res = await WebView.CallFunction(atoms.IS_ELEMENT_CLICKABLE, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}, {WebPointToJsonString(location)}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
-            if (res?.ExceptionDetails != null)
-            {
-                throw new WebBrowserException(
-                    $"IS_ELEMENT_CLICKABLE failed\n" +
-                    $"{res.ExceptionDetails.Text}\n" +
-                    $"Line {res.ExceptionDetails.LineNumber}:{res.ExceptionDetails.ColumnNumber}\n" +
-                    $"Stack:\n" +
-                    $"{res.ExceptionDetails.StackTrace}",
-                    "invalid element state");
-            }
-            return (res?.Result?.Value as JObject)?["value"]?["clickable"]?.Value<bool>() == true;
+            if (!(ResultValueConverter.GetResultOrThrow(res).Value is JObject valueJObject))
+                throw new ApplicationException("Value is not JObject");
+            var value = valueJObject["value"];
+            if (value == null)
+                throw new ApplicationException("value is null");
+            // https://github.com/SeleniumHQ/selenium/blob/3832787933af19806d552546cf64157127f56b01/javascript/chrome-driver/atoms.js#L220
+            var clickable = value["clickable"];
+            if (clickable == null)
+                throw new ApplicationException("value has no clickable");
+            return clickable.Value<bool>() ? (true, "is clickable") : (false, value["message"].Value<string>());
         }
 
         public string WebPointToJsonString(WebPoint point)
@@ -60,7 +59,7 @@ namespace Zu.Chrome.DriverCore
             // center is used because some overlays (like navigation bars or 'Accept our cookie policy' messaged) may hide target element.
             var func = "function(elem) { return elem.scrollIntoView({block: 'center', inline: 'nearest'}); }";
             var res = await WebView.CallFunction(func, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
-            var value = res?.Result?.Value as JToken;
+            var value = ResultValueConverter.GetResultOrThrow(res).Value as JToken;
             var exception = ResultValueConverter.ToWebBrowserException(value);
             if (exception != null)
                 throw exception;
@@ -71,26 +70,16 @@ namespace Zu.Chrome.DriverCore
         {
             await ScrollElementIntoView(elementId, cancellationToken).ConfigureAwait(false);
             var res = await WebView.CallFunction(atoms.GET_LOCATION_IN_VIEW, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}, {center.ToString().ToLower()}, {WebRectToJsonString(region)}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
-            var location = ResultValueConverter.ToWebPoint(res?.Result?.Value);
+            var location = ResultValueConverter.ToWebPoint(ResultValueConverter.GetResultOrThrow(res).Value);
             if (location == null)
-            {
-                if (res?.ExceptionDetails != null)
-                    throw new WebBrowserException(
-                        $"GET_LOCATION_IN_VIEW failed\n" +
-                        $"{res.ExceptionDetails.Text}\n" +
-                        $"Line {res.ExceptionDetails.LineNumber}:{res.ExceptionDetails.ColumnNumber}\n" +
-                        $"Stack:\n" +
-                        $"{res.ExceptionDetails.StackTrace}",
-                        "invalid element state");
                 throw new WebBrowserException("Failed to get location in view on the current page view", "invalid element state");
-            }
 
             if (clickableElementId != null)
             {
                 var middle = location.Offset(region.Width / 2, region.Height / 2);
-                var isClickable = await VerifyElementClickable(clickableElementId, middle, cancellationToken).ConfigureAwait(false);
+                var (isClickable, message) = await VerifyElementClickable(clickableElementId, middle, cancellationToken).ConfigureAwait(false);
                 if (!isClickable)
-                    throw new WebBrowserException("Element is not clickable on the current page view", "invalid element state");
+                    throw new WebBrowserException(message, "invalid element state");
             }
 
             return location;
@@ -126,7 +115,7 @@ namespace Zu.Chrome.DriverCore
                 var func = "function (element) {" + "  var map = element.parentElement;" + "  if (map.tagName.toLowerCase() != 'map')" + "    throw new Error('the area is not within a map');" + "  var mapName = map.getAttribute('name');" + "  if (mapName == null)" + "    throw new Error ('area\\'s parent map must have a name');" + "  mapName = '#' + mapName.toLowerCase();" + "  var images = document.getElementsByTagName('img');" + "  for (var i = 0; i < images.length; i++) {" + "    if (images[i].useMap.toLowerCase() == mapName)" + "      return images[i];" + "  }" + "  throw new Error('no img is found for the area');" + "}";
                 var frameId = Session == null ? "" : Session.GetCurrentFrameId();
                 var res = await WebView.CallFunction(func, $"{{\"{Session?.GetElementKey()}\":\"{targetElementId}\"}}", frameId, true, false, cancellationToken).ConfigureAwait(false);
-                targetElementId = ResultValueConverter.ToElementId(res?.Result?.Value, Session?.GetElementKey());
+                targetElementId = ResultValueConverter.ToElementId(ResultValueConverter.GetResultOrThrow(res).Value, Session?.GetElementKey());
             //return ResultValueConverter.ToWebPoint(res?.Result?.Value);
             }
 
@@ -147,11 +136,12 @@ namespace Zu.Chrome.DriverCore
             //var frameId = Session == null ? "" : Session.GetCurrentFrameId();
             //var res = await webView.EvaluateScript(expression, frameId, true, cancellationToken);
             var res = await WebView.CallFunction(get_element_region.JsSource, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
-            var value = res?.Result?.Value as JToken;
+            var res2 = ResultValueConverter.GetResultOrThrow(res);
+            var value = res2.Value as JToken;
             var exception = ResultValueConverter.ToWebBrowserException(value);
             if (exception != null)
                 throw exception;
-            return ResultValueConverter.ToWebRect(res?.Result?.Value);
+            return ResultValueConverter.ToWebRect(res2.Value);
         }
 
         public async Task<string> GetElementTagName(string elementId, CancellationToken cancellationToken = new CancellationToken())
