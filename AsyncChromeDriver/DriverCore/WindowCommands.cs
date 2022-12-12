@@ -69,7 +69,7 @@ namespace Zu.Chrome.DriverCore
             var args = $"{{\"{strategy}\":\"{expr}\"}}";
             if (startNode != null)
                 args += $", {{\"{_session.GetElementKey()}\":\"{startNode}\"}}";
-            return (await _webView.CallFunction(func, args, frameId, true, false, cancellationToken).ConfigureAwait(false)).AsJToken();
+            return (await _webView.CallFunction(func, args, frameId, true, false, cancellationToken).ConfigureAwait(false)).AsJToken()?["value"];
         }
 
         public async Task<string> GoBack(CancellationToken cancellationToken = new CancellationToken())

@@ -89,9 +89,9 @@ namespace Zu.Chrome.DriverCore
 
         internal static JToken AsJToken(this EvaluateCommandResponse res)
         {
-            var value = GetResultOrThrow(res).Value;
-            ThrowWhenBadStatus(value as JToken);
-            return (value as JToken)?["value"];
+            var value = GetResultOrThrow(res).Value as JToken;
+            ThrowWhenBadStatus(value);
+            return value;
         }
 
         internal static string ToElementId(object value, string elementKey = "ELEMENT")
