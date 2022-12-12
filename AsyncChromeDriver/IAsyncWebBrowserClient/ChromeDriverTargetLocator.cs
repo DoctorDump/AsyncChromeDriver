@@ -45,7 +45,7 @@ namespace Zu.Chrome
         {
             var script = "function(xpath) {" + "  return document.evaluate(xpath, document, null, " + "      XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;" + "}";
             var xpath = "(/html/body//iframe|/html/frameset//frame)";
-            xpath += $"[{(frameIndex + 1).ToString()}]";
+            xpath += $"[{frameIndex + 1}]";
             var args = new List<string>{xpath}; //$"\"{xpath}\"" };
             try
             {

@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Zu.ChromeDevTools.Runtime;
 
 namespace Zu.Chrome.DriverCore
 {
@@ -57,12 +58,7 @@ namespace Zu.Chrome.DriverCore
             var args = $"{{\"{strategy}\":\"{expr}\"}}";
             if (startNode != null)
                 args += $", {{\"{_session.GetElementKey()}\":\"{startNode}\"}}";
-            var res = await _webView.CallFunction(func, args, frameId, true, false, cancellationToken).ConfigureAwait(false);
-            var value = res?.Result?.Value as JToken;
-            var exception = ResultValueConverter.ToWebBrowserException(value);
-            if (exception != null)
-                throw exception;
-            return value;
+            return (await _webView.CallFunction(func, args, frameId, true, false, cancellationToken).ConfigureAwait(false)).AsJToken();
         }
 
         public async Task<JToken> FindElements(string strategy, string expr, string startNode = null, CancellationToken cancellationToken = new CancellationToken())
@@ -73,12 +69,7 @@ namespace Zu.Chrome.DriverCore
             var args = $"{{\"{strategy}\":\"{expr}\"}}";
             if (startNode != null)
                 args += $", {{\"{_session.GetElementKey()}\":\"{startNode}\"}}";
-            var res = await _webView.CallFunction(func, args, frameId, true, false, cancellationToken).ConfigureAwait(false);
-            var value = res?.Result?.Value as JToken;
-            var exception = ResultValueConverter.ToWebBrowserException(value);
-            if (exception != null)
-                throw exception;
-            return value?["value"];
+            return (await _webView.CallFunction(func, args, frameId, true, false, cancellationToken).ConfigureAwait(false)).AsJToken();
         }
 
         public async Task<string> GoBack(CancellationToken cancellationToken = new CancellationToken())

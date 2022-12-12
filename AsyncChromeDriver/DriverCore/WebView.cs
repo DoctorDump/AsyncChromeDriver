@@ -238,9 +238,9 @@ namespace Zu.Chrome.DriverCore
                 var nodeId = await GetNodeIdFromFunction(contextId, function, args, cancellationToken).ConfigureAwait(false);
                 return await _asyncChromeDriver.DomTracker.GetFrameIdForNode(nodeId).ConfigureAwait(false);
             }
-            catch
+            catch (Exception e)
             {
-                throw;
+                throw new Exception($"Cannot get context Id for frame \"{frame}\"", e);
             }
         }
 
@@ -252,6 +252,8 @@ namespace Zu.Chrome.DriverCore
             try
             {
                 var elementId = await EvaluateScriptAndGetObjectInContext(expression, null /*context_id*/, cancellationToken).ConfigureAwait(false);
+                if (elementId == null)
+                    throw new Exception("EvaluateScriptAndGetObjectInContext returned no elementId");
                 //var element_id = await CallFunctionInContextAndGetObject(function, argsJson, context_id, asyncChromeDriver.Session.w3c_compliant, cancellationToken);
                 long ? nodeId = null;
                 var nodeResp = await DevTools.DOM.RequestNode(new RequestNodeCommand{ObjectId = elementId}, cancellationToken).ConfigureAwait(false);

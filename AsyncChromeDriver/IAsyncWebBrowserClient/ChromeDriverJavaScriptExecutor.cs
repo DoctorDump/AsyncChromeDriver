@@ -13,7 +13,7 @@ namespace Zu.Chrome
 {
     public class ChromeDriverJavaScriptExecutor : IJavaScriptExecutor
     {
-        private IAsyncChromeDriver _asyncChromeDriver;
+        private readonly IAsyncChromeDriver _asyncChromeDriver;
         public ChromeDriverJavaScriptExecutor(IAsyncChromeDriver asyncChromeDriver)
         {
             _asyncChromeDriver = asyncChromeDriver;
@@ -21,11 +21,9 @@ namespace Zu.Chrome
 
         public async Task<object> ExecuteAsyncScript(string script, CancellationToken cancellationToken = default (CancellationToken), params object[] args)
         {
-            var res = await _asyncChromeDriver.WindowCommands.ExecuteAsyncScript(script, ArgsToStringList(args)).ConfigureAwait(false);
+            var res = await _asyncChromeDriver.WindowCommands.ExecuteAsyncScript(script, ArgsToStringList(args), cancellationToken).ConfigureAwait(false);
             var value = (res as JObject)?["value"];
-            var exception = ResultValueConverter.ToWebBrowserException(value);
-            if (exception != null)
-                throw exception;
+            ResultValueConverter.ThrowWhenBadStatus(value);
             return ParseExecuteScriptReturnValue((value as JObject)?["value"]);
         }
 
@@ -47,10 +45,8 @@ namespace Zu.Chrome
 
         public async Task<object> ExecuteScript(string script, CancellationToken cancellationToken = default (CancellationToken), params object[] args)
         {
-            var res = await _asyncChromeDriver.WindowCommands.ExecuteScript(script, ArgsToStringList(args)).ConfigureAwait(false);
-            var exception = ResultValueConverter.ToWebBrowserException(res);
-            if (exception != null)
-                throw exception;
+            var res = await _asyncChromeDriver.WindowCommands.ExecuteScript(script, ArgsToStringList(args), cancellationToken).ConfigureAwait(false);
+            ResultValueConverter.ThrowWhenBadStatus(res);
             return ParseExecuteScriptReturnValue((res as JObject)?["value"]); // (res as JObject)?["value"] as JValue)?.Value;
         }
 
