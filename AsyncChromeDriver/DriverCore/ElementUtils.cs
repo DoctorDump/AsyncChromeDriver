@@ -86,7 +86,7 @@ namespace Zu.Chrome.DriverCore
             var func = "function() { return document.activeElement || document.body }";
             var frameId = Session == null ? "" : Session.GetCurrentFrameId();
             var res = await WebView.CallFunction(func, null, frameId, true, false, cancellationToken).ConfigureAwait(false);
-            return ResultValueConverter.ToElementId(ResultValueConverter.GetResultOrThrow(res).Value, Session?.GetElementKey());
+            return res.ToElementId(Session?.GetElementKey());
         //return res?.Result?.Value as JToken;
         }
 
@@ -110,7 +110,7 @@ namespace Zu.Chrome.DriverCore
                 var func = "function (element) {" + "  var map = element.parentElement;" + "  if (map.tagName.toLowerCase() != 'map')" + "    throw new Error('the area is not within a map');" + "  var mapName = map.getAttribute('name');" + "  if (mapName == null)" + "    throw new Error ('area\\'s parent map must have a name');" + "  mapName = '#' + mapName.toLowerCase();" + "  var images = document.getElementsByTagName('img');" + "  for (var i = 0; i < images.length; i++) {" + "    if (images[i].useMap.toLowerCase() == mapName)" + "      return images[i];" + "  }" + "  throw new Error('no img is found for the area');" + "}";
                 var frameId = Session == null ? "" : Session.GetCurrentFrameId();
                 var res = await WebView.CallFunction(func, $"{{\"{Session?.GetElementKey()}\":\"{targetElementId}\"}}", frameId, true, false, cancellationToken).ConfigureAwait(false);
-                targetElementId = ResultValueConverter.ToElementId(ResultValueConverter.GetResultOrThrow(res).Value, Session?.GetElementKey());
+                targetElementId = res.ToElementId(Session?.GetElementKey());
             //return ResultValueConverter.ToWebPoint(res?.Result?.Value);
             }
 

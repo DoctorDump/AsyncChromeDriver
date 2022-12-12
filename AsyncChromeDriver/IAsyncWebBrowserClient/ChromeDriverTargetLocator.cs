@@ -52,7 +52,7 @@ namespace Zu.Chrome
                 var frame = await _asyncChromeDriver.WebView.GetFrameByFunction(_asyncChromeDriver.Session.GetCurrentFrameId(), script, args, cancellationToken).ConfigureAwait(false);
                 var argsJson = Newtonsoft.Json.JsonConvert.SerializeObject(args);
                 var res = await _asyncChromeDriver.WebView.CallFunction(script, argsJson, _asyncChromeDriver.Session.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
-                var elementId = ResultValueConverter.ToElementId(res?.Result?.Value, _asyncChromeDriver.Session.GetElementKey());
+                var elementId = res.ToElementId(_asyncChromeDriver.Session.GetElementKey());
                 var chromeDriverId = Util.GenerateId();
                 var kSetFrameIdentifier = "function(frame, id) {" + "  frame.setAttribute('cd_frame_id_', id);" + "}";
                 argsJson = $"{_asyncChromeDriver.Session.GetElementJsonString(elementId)}, \"{chromeDriverId}\"";
@@ -82,7 +82,7 @@ namespace Zu.Chrome
                 var frame = await _asyncChromeDriver.WebView.GetFrameByFunction(_asyncChromeDriver.Session.GetCurrentFrameId(), script, args, cancellationToken).ConfigureAwait(false);
                 var argsJson = Newtonsoft.Json.JsonConvert.SerializeObject(args);
                 var res = await _asyncChromeDriver.WebView.CallFunction(script, argsJson, _asyncChromeDriver.Session.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
-                var elementId = ResultValueConverter.ToElementId(res?.Result?.Value, _asyncChromeDriver.Session.GetElementKey());
+                var elementId = res.ToElementId(_asyncChromeDriver.Session.GetElementKey());
                 var chromeDriverId = Util.GenerateId();
                 var kSetFrameIdentifier = "function(frame, id) {" + "  frame.setAttribute('cd_frame_id_', id);" + "}";
                 argsJson = $"{_asyncChromeDriver.Session.GetElementJsonString(elementId)}, \"{chromeDriverId}\"";
@@ -105,7 +105,7 @@ namespace Zu.Chrome
                 var frame = await _asyncChromeDriver.WebView.GetFrameByFunction(_asyncChromeDriver.Session.GetCurrentFrameId(), script, args, cancellationToken).ConfigureAwait(false);
                 var argsJson = Newtonsoft.Json.JsonConvert.SerializeObject(args);
                 var res = await _asyncChromeDriver.WebView.CallFunction(script, argsJson, _asyncChromeDriver.Session.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
-                var elementId2 = ResultValueConverter.ToElementId(res?.Result?.Value, _asyncChromeDriver.Session.GetElementKey());
+                var elementId2 = res.ToElementId(_asyncChromeDriver.Session.GetElementKey());
                 var chromeDriverId = Util.GenerateId();
                 var kSetFrameIdentifier = "function(frame, id) {" + "  frame.setAttribute('cd_frame_id_', id);" + "}";
                 argsJson = $"{_asyncChromeDriver.Session.GetElementJsonString(elementId2)}, \"{chromeDriverId}\"";

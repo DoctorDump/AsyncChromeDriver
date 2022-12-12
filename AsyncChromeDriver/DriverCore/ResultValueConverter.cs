@@ -75,9 +75,7 @@ namespace Zu.Chrome.DriverCore
 
         internal static bool ValueIsNull(JToken res)
         {
-            if (res == null) return true;
-            if (res?["value"] is JValue && (res?["value"] as JValue)?.Value == null) return true;
-            return false;
+            return res == null || res["value"] is JValue value && value.Value == null;
         }
 
         internal static string AsString(this EvaluateCommandResponse res)
@@ -94,9 +92,9 @@ namespace Zu.Chrome.DriverCore
             return value;
         }
 
-        internal static string ToElementId(object value, string elementKey = "ELEMENT")
+        internal static string ToElementId(this EvaluateCommandResponse res, string elementKey = "ELEMENT")
         {
-            return (value as JObject)?["value"]?[elementKey]?.ToString();
+            return (GetResultOrThrow(res).Value as JObject)?["value"]?[elementKey]?.ToString();
         }
 
         internal static void ThrowWhenBadStatus(JToken json)
