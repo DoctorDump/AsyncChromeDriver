@@ -21,7 +21,7 @@ namespace Zu.ChromeDevTools
         private readonly ConcurrentDictionary<Type, string> _eventTypeMap = new ConcurrentDictionary<Type, string>();
 
         private WebSocket _sessionSocket;
-        private ManualResetEventSlim _openEvent = new ManualResetEventSlim(false);
+        private TaskCompletionSource<bool> _openResult = new TaskCompletionSource<bool>();
         private long _currentCommandId = 0;
 
         public delegate void DevToolsEventHandler(object sender, string methodName, JToken eventData);
@@ -234,7 +234,8 @@ namespace Zu.ChromeDevTools
             {
                 _sessionSocket.Open();
 
-                await Task.Run(() => _openEvent.Wait(cancellationToken), cancellationToken);
+                using (var x = cancellationToken.Register(() => { _openResult.TrySetCanceled(); })) 
+                    await _openResult.Task;
             }
         }
 
@@ -309,13 +310,12 @@ namespace Zu.ChromeDevTools
         #region EventHandlers
         private void Ws_Opened(object sender, EventArgs e)
         {
-            _openEvent.Set();
+            _openResult.TrySetResult(true);
         }
 
         private void Ws_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
         {
-            LogError("Error: {exception}", e.Exception);
-            //throw e.Exception;
+            _openResult.TrySetException(new Exception("Failed to open session WebSocket", e.Exception));
         }
 
         private void Ws_MessageReceived(object sender, MessageReceivedEventArgs e)
@@ -354,12 +354,7 @@ namespace Zu.ChromeDevTools
                         _sessionSocket = null;
                     }
 
-                    if (_openEvent != null)
-                    {
-                        _openEvent.Dispose();
-                        _openEvent = null;
-                    }
-
+                    _openResult = null;
                 }
 
                 _isDisposed = true;
