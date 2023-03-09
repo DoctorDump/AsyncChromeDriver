@@ -68,7 +68,13 @@ namespace Zu.ChromeDevTools
             _logger = logger;
             _endpointAddress = endpointAddress;
 
-            _sessionSocket = new WebSocket(_endpointAddress)
+            // Chrome 111 rejects debugging web socket connections with a defined Origin header
+            // See https://chromium-review.googlesource.com/c/chromium/src/+/4106102
+            // So there should be no Origin header.
+            // But by default origin is "", and there is no way to remove Origin (null doesn't work).
+            // So it is required to use --remote-allow-origins=* to bypass this.
+            // Or you can set some same origin here and in ChromeProfilesWorker.OpenChromeProfile (--remote-allow-origins)
+            _sessionSocket = new WebSocket(_endpointAddress, origin: "")
             {
                 EnableAutoSendPing = false
             };

@@ -45,6 +45,13 @@ namespace Zu.Chrome
             }
 
             var args = "--remote-debugging-port=" + config.Port
+                // Chrome 111 rejects debugging web socket connections with a defined Origin header
+                // See https://chromium-review.googlesource.com/c/chromium/src/+/4106102
+                // There should be no Origin header in chrome session WebSocket (see ChromeSession.ChromeSession).
+                // But by default WebSocket Origin is set to "", and there is no way to remove Origin (null doesn't work).
+                // So it is required to use --remote-allow-origins=* to bypass this.
+                // Or you can set some same origin here and in ChromeSession.ChromeSession (new WebSocket)
+                + " --remote-allow-origins=*"
                 + (string.IsNullOrWhiteSpace(config.UserDir) ? "" : " --user-data-dir=\"" + config.UserDir + "\"")
                 + (firstRun ? " --bwsi --no-first-run" : "")
                 + (config.Headless ? " --headless --disable-gpu" : "")
