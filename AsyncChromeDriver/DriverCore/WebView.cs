@@ -230,7 +230,7 @@ namespace Zu.Chrome.DriverCore
             }
         }
 
-        public async Task<string> GetFrameByFunction(string frame, string function, List<string> args, CancellationToken cancellationToken = default (CancellationToken))
+        public async Task<string> GetFrameByFunction(string frame, string function, List<object> args, CancellationToken cancellationToken = default (CancellationToken))
         {
             long ? contextId = FrameTracker.GetContextIdForFrame(frame);
             try
@@ -244,7 +244,7 @@ namespace Zu.Chrome.DriverCore
             }
         }
 
-        public async Task<int> GetNodeIdFromFunction(long ? contextId, string function, List<string> args, CancellationToken cancellationToken = default (CancellationToken))
+        public async Task<int> GetNodeIdFromFunction(long ? contextId, string function, List<object> args, CancellationToken cancellationToken = default (CancellationToken))
         {
             var argsJson = Newtonsoft.Json.JsonConvert.SerializeObject(args);
             var w3 = _asyncChromeDriver.Session.W3CCompliant ? "true" : "false";
