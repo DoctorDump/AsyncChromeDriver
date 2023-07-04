@@ -66,9 +66,10 @@ namespace Zu.Chrome.DriverCore
         {
             await ScrollElementIntoView(elementId, cancellationToken).ConfigureAwait(false);
             var res = await WebView.CallFunction(atoms.GET_LOCATION_IN_VIEW, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}, {center.ToString().ToLower()}, {WebRectToJsonString(region)}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false);
-            var location = ResultValueConverter.ToWebPoint(ResultValueConverter.GetResultOrThrow(res).Value);
+            var value = ResultValueConverter.GetResultOrThrow(res).Value;
+            var location = ResultValueConverter.ToWebPoint(value);
             if (location == null)
-                throw new WebBrowserException("Failed to get location in view on the current page view", "invalid element state");
+                throw new WebBrowserException($"Failed to get location in view on the current page view\n{value}", "invalid element state");
 
             if (clickableElementId != null)
             {

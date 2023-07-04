@@ -29,11 +29,12 @@ namespace Zu.Chrome.DriverCore
 
         internal static WebPoint ToWebPoint(object value)
         {
-            var res = (value as JObject)?["value"];
-            if (res != null) {
+            if ((value as JObject)?["value"] is JObject res) 
+            {
                 var x = res["x"]?.Value<int>();
                 var y = res["y"]?.Value<int>();
-                if (x != null && y != null) return new WebPoint((int)x, (int)y);
+                if (x != null && y != null) 
+                    return new WebPoint(x.Value, y.Value);
             }
             return null;
         }
@@ -134,7 +135,7 @@ namespace Zu.Chrome.DriverCore
             }
             else if (status == "17")
             {
-                throw new InvalidOperationException(value);
+                throw new InvalidOperationException(value); // "javascript error" ?
             }
             else
             {
