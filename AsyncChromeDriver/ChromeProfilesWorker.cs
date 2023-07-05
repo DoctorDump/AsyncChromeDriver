@@ -3,7 +3,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Zu.WebBrowser.BasicTypes;
 
@@ -15,10 +14,7 @@ namespace Zu.Chrome
         {
             var platformName = GetPlatformString();
             if (platformName == "windows") {
-                if (File.Exists(@"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"))
-                    ChromeBinaryFileName = @"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe";
-                else if (File.Exists(@"C:\Program Files\Google\Chrome\Application\chrome.exe"))
-                    ChromeBinaryFileName = @"C:\Program Files\Google\Chrome\Application\chrome.exe";
+                ChromeBinaryFileName = GetWindowsChromePath();
             } else if (platformName == "linux") {
                 ChromeBinaryFileName = "/usr/bin/google-chrome";
             } else if (platformName == "mac") {
@@ -26,6 +22,32 @@ namespace Zu.Chrome
             }
         }
 
+
+        private static string GetWindowsChromePath()
+        {
+            foreach (var rootFolder in new[] { "%ProgramFiles%", "%ProgramFiles(x86)%", "%LocalAppData%"})
+            {
+                var path = Path.Combine(rootFolder, @"Google\Chrome\Application\chrome.exe");
+                if (File.Exists(path))
+                    return path;
+            }
+
+#if !(NETSTANDARD2_0 || NETCOREAPP2_0)
+            using (var regKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe") ??
+                                Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe"))
+            {
+                if (regKey != null)
+                {
+                    // Try to get the "(Default)" value
+                    var path = regKey.GetValue(null) as string;
+                    if (File.Exists(path))
+                        return path;
+                }
+            }
+#endif
+
+            return null;
+        }
 
         public static string ChromeBinaryFileName { get; set; }
 
@@ -60,6 +82,8 @@ namespace Zu.Chrome
                 + (config.WindowSize != null ? $" --window-size={config.WindowSize.Width},{config.WindowSize.Height}" : "")
                 + (string.IsNullOrWhiteSpace(config.CommandLineArguments) ? "" : " " + config.CommandLineArguments);
 
+            if (!File.Exists(ChromeBinaryFileName))
+                throw new WebBrowserException($"Google Chrome was not found at {ChromeBinaryFileName}");
 
             if (config.Headless) {
                 var process = new ProcessWithJobObject();
