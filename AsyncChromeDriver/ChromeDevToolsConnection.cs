@@ -1,7 +1,9 @@
-// Copyright (c) Oleg Zudov. All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) Oleg Zudov. All Rights Reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 using Newtonsoft.Json;
 using System;
+using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Zu.ChromeDevTools;
@@ -92,7 +94,28 @@ namespace Zu.Chrome
             //var remoteSessionUrls = new List<string>();
             var webClient = new HttpClient();
             var uriBuilder = new UriBuilder { Scheme = "http", Host = "127.0.0.1", Port = port, Path = "/json" };
-            var remoteSessions = await webClient.GetStringAsync(uriBuilder.Uri).ConfigureAwait(false);
+
+            string remoteSessions;
+            var s = Stopwatch.StartNew();
+            while (true) 
+            {
+                try
+                {
+                    remoteSessions = await webClient.GetStringAsync(uriBuilder.Uri).ConfigureAwait(false);
+                    break;
+                }
+                catch (HttpRequestException ex)
+                {
+                    if ((ex.InnerException as WebException)?.Status != WebExceptionStatus.ConnectFailure || s.Elapsed > TimeSpan.FromSeconds(10))
+                        throw;
+                    // If browser starts slowly can get:
+                    // System.Net.Http.HttpRequestException: Произошла ошибка при отправке запроса.
+                    //   System.Net.WebException: Невозможно соединиться с удаленным сервером
+                    //     System.Net.Sockets.SocketException: Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение 127.0.0.1:14683
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                }
+            }
+
             try {
                 //return JsonConvert.DeserializeObject<RemoteSession[]>(remoteSessions); 
                 return JsonConvert.DeserializeObject<ChromeSessionInfo[]>(remoteSessions);

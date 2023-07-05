@@ -29,6 +29,8 @@ namespace Zu.Chrome
 
         public static string ChromeBinaryFileName { get; set; }
 
+        public static TimeSpan ChromeWarmupDelay { get; set; } = TimeSpan.FromSeconds(0.5);
+
         public static ChromeProcessInfo OpenChromeProfile(string userDir, int port = 5999, bool isHeadless = false, WebSize windowSize = null)
         {
             return OpenChromeProfile(new ChromeDriverConfig { UserDir = userDir, Port = port, Headless = isHeadless, WindowSize = windowSize });
@@ -62,7 +64,7 @@ namespace Zu.Chrome
             if (config.Headless) {
                 var process = new ProcessWithJobObject();
                 process.StartProc(ChromeBinaryFileName, args);
-                Thread.Sleep(1000);
+                Thread.Sleep(ChromeWarmupDelay);
                 return new ChromeProcessInfo { ProcWithJobObject = process, UserDir = config.UserDir, Port = config.Port };
             } else {
                 var process = new Process();
@@ -70,10 +72,9 @@ namespace Zu.Chrome
                 process.StartInfo.Arguments = args;
                 process.StartInfo.UseShellExecute = false;
                 process.Start();
-                Thread.Sleep(1000);
+                Thread.Sleep(ChromeWarmupDelay);
                 return new ChromeProcessInfo { Proc = process, UserDir = config.UserDir, Port = config.Port };
             }
-
         }
 
 
