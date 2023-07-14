@@ -2,9 +2,9 @@
 using Zu.ChromeDevTools;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using Zu.ChromeWebSocketProxy;
+using System.Threading;
 
 namespace Zu.Chrome.BrowserDevTools
 {
@@ -32,12 +32,9 @@ namespace Zu.Chrome.BrowserDevTools
         }
 
         //public bool Connected { get; set; } = false;
-        public override async Task Connect()
+        public override async Task Connect(CancellationToken ct)
         {
-            var sessions = await GetSessions(Port).ConfigureAwait(false);
-            var endpointUrl = sessions.FirstOrDefault(s => s.Type == "page")?.WebSocketDebuggerUrl;
-            if (endpointUrl == null)
-                throw new Exception("Cannot get page session from Chrome");
+            var endpointUrl = await GetEndpointUrl(Port, ct).ConfigureAwait(false);
             //var dir = wsProxyConfig.DevToolsFilesDir ?? Directory.GetCurrentDirectory();
             //await LoadDevToolsFiles(dir);
             if (_wsProxyConfig?.DoProxyHttpTraffic == true)

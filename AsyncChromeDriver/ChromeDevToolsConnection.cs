@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Zu.ChromeDevTools;
 
@@ -81,28 +82,31 @@ namespace Zu.Chrome
             _logger = logger;
         }
 
-        public virtual async Task Connect()
+        public virtual async Task Connect(CancellationToken ct)
         {
-            var sessions = await GetSessions(Port).ConfigureAwait(false);
-            var endpointUrl = sessions.FirstOrDefault(s => s.Type == "page")?.WebSocketDebuggerUrl;
+            var endpointUrl = await GetEndpointUrl(Port, ct).ConfigureAwait(false);
             Session = new ChromeSession(_logger, endpointUrl);
         }
 
-        // todo check
-        public async Task<ChromeSessionInfo[]> GetSessions(int port)
+        protected static async Task<string> GetEndpointUrl(int port, CancellationToken ct)
         {
-            //var remoteSessionUrls = new List<string>();
             var webClient = new HttpClient();
             var uriBuilder = new UriBuilder { Scheme = "http", Host = "127.0.0.1", Port = port, Path = "/json" };
 
-            string remoteSessions;
             var s = Stopwatch.StartNew();
-            while (true) 
+            while (true)
             {
                 try
                 {
-                    remoteSessions = await webClient.GetStringAsync(uriBuilder.Uri).ConfigureAwait(false);
-                    break;
+                    var remoteSessions = await webClient.GetStringAsync(uriBuilder.Uri).ConfigureAwait(false);
+
+                    var sessions = JsonConvert.DeserializeObject<ChromeSessionInfo[]>(remoteSessions);
+                    var endpointUrl = sessions.FirstOrDefault(session => session.Type == "page")?.WebSocketDebuggerUrl;
+                    if (endpointUrl != null) 
+                        return endpointUrl;
+                    
+                    if (s.Elapsed > TimeSpan.FromSeconds(10))
+                        throw new Exception("Cannot get page session from Chrome");
                 }
                 catch (HttpRequestException ex)
                 {
@@ -112,15 +116,8 @@ namespace Zu.Chrome
                     // System.Net.Http.HttpRequestException: Произошла ошибка при отправке запроса.
                     //   System.Net.WebException: Невозможно соединиться с удаленным сервером
                     //     System.Net.Sockets.SocketException: Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение 127.0.0.1:14683
-                    await Task.Delay(TimeSpan.FromMilliseconds(500));
                 }
-            }
-
-            try {
-                //return JsonConvert.DeserializeObject<RemoteSession[]>(remoteSessions); 
-                return JsonConvert.DeserializeObject<ChromeSessionInfo[]>(remoteSessions);
-            } catch (Exception) {
-                return null;
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
             }
         }
 

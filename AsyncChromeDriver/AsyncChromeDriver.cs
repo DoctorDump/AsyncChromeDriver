@@ -191,37 +191,22 @@ namespace Zu.Chrome
             WindowCommands = new WindowCommands(this);
         }
 
-        public virtual async Task<string> Connect(CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<string> Connect(CancellationToken ct = default)
         {
+            // While having CancellationToken here - is always default, because SyncWebDriver.Open - has no CancellationToken at all.
+            // So use manual timeout 1 minute that should be enough to start or to fail (Chrome may start slowly for first time).
+            ct = CancellationTokenSource.CreateLinkedTokenSource(ct, new CancellationTokenSource(TimeSpan.FromMinutes(1)).Token).Token;
+
             IsConnected = true;
             UnsubscribeDevToolsSessionEvent();
             DoConnectWhenCheckConnected = false;
             if (!Config.DoNotOpenChromeProfile) {
                 ChromeProcess = await OpenChromeProfile(Config).ConfigureAwait(false);
                 if (Config.IsTempProfile)
-                    await Task.Delay(Config.TempDirCreateDelay).ConfigureAwait(false);
+                    await Task.Delay(Config.TempDirCreateDelay, ct).ConfigureAwait(false);
             }
 
-            int connectionAttempts = 0;
-            int maxAttempts = 5;
-            if (ChromeProfilesWorker.GetPlatformString() != "windows") {
-                maxAttempts = 50;
-            }
-            while (true) {
-                connectionAttempts++;
-                try {
-                    await DevTools.Connect().ConfigureAwait(false);
-                    break;
-                } catch (Exception ex) {
-                    //LiveLogger.WriteLine("Connection attempt {0} failed with: {1}", connection_attempts, ex);
-                    if (_isClosed || connectionAttempts >= maxAttempts) {
-                        throw;
-                    } else {
-                        await Task.Delay(200).ConfigureAwait(false);
-                    }
-                }
-            }
-
+            await DevTools.Connect(ct).ConfigureAwait(false);
             SubscribeToDevToolsSessionEvent();
             await FrameTracker.Enable().ConfigureAwait(false);
             await DomTracker.Enable().ConfigureAwait(false);
@@ -254,7 +239,7 @@ namespace Zu.Chrome
             }
         }
 
-        public async Task<ChromeProcessInfo> OpenChromeProfile(ChromeDriverConfig config)
+        private async Task<ChromeProcessInfo> OpenChromeProfile(ChromeDriverConfig config)
         {
             ChromeProcessInfo res = null;
             await Task.Run(() => res = ChromeProfilesWorker.OpenChromeProfile(config)).ConfigureAwait(false); // userDir, Port, isHeadless));
