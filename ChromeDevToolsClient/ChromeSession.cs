@@ -148,6 +148,9 @@ namespace Zu.ChromeDevTools
         //[DebuggerStepThrough]
         public virtual async Task<JToken> SendCommand(string commandName, JToken @params, CancellationToken cancellationToken = default(CancellationToken), int? millisecondsTimeout = null, bool throwExceptionIfResponseNotReceived = true)
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(ChromeSession), $"Trying to call {nameof(SendCommand)} on disposed object.");
+
             var id = Interlocked.Increment(ref _currentCommandId);
             var message = new
             {
@@ -165,7 +168,6 @@ namespace Zu.ChromeDevTools
 
             var contents = JsonConvert.SerializeObject(message);
 
-            if (_isDisposed) return null;
             ResponseInfo res = null;
             try
             {
@@ -236,6 +238,9 @@ namespace Zu.ChromeDevTools
 
         private async Task OpenSessionConnection(CancellationToken cancellationToken)
         {
+            if (_isDisposed)
+                throw new ObjectDisposedException(nameof(ChromeSession), $"Trying to call {nameof(OpenSessionConnection)} on disposed object.");
+
             if (_sessionSocket.State != WebSocketState.Open)
             {
                 _sessionSocket.Open();
