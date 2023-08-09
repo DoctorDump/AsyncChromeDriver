@@ -11,7 +11,7 @@ namespace Zu.ChromeDevTools
     using WebSocket4Net;
 
     /// <summary>
-    /// Represents a websocket connection to a running chrome instance that can be used to send commands and recieve events.
+    /// Represents a websocket connection to a running chrome instance that can be used to send commands and receive events.
     /// </summary>
     public partial class ChromeSession : IDisposable
     {
@@ -81,6 +81,7 @@ namespace Zu.ChromeDevTools
             _sessionSocket.MessageReceived += Ws_MessageReceived;
             _sessionSocket.Error += Ws_Error;
             _sessionSocket.Opened += Ws_Opened;
+            _sessionSocket.Closed += Ws_Closed;
         }
 
         /// <summary>
@@ -134,7 +135,7 @@ namespace Zu.ChromeDevTools
             return result.ToObject<TCommandResponse>();
         }
 
-        private ConcurrentDictionary<long, TaskCompletionSource<ResponseInfo>> _messages =
+        private readonly ConcurrentDictionary<long, TaskCompletionSource<ResponseInfo>> _messages =
            new ConcurrentDictionary<long, TaskCompletionSource<ResponseInfo>>();
         /// <summary>
         /// Returns a JToken based on a command created with the specified command name and params.
@@ -196,7 +197,7 @@ namespace Zu.ChromeDevTools
                 if (!String.IsNullOrWhiteSpace(errorData))
                     exceptionMessage = $"{exceptionMessage} - {errorData}";
 
-                LogTrace("Recieved Error Response {id}: {message} {data}", message.id, message, errorData);
+                LogTrace("Received Error Response {id}: {message} {data}", message.id, message, errorData);
                 throw new CommandResponseException(exceptionMessage)
                 {
                     Code = res.Result.Value<long>("code")
@@ -243,6 +244,9 @@ namespace Zu.ChromeDevTools
 
             if (_sessionSocket.State != WebSocketState.Open)
             {
+                if (_openResult.Task.IsCompleted)
+                    throw new InvalidOperationException("Session socket has been closed");
+
                 _sessionSocket.Open();
 
                 using (var x = cancellationToken.Register(() => { _openResult.TrySetCanceled(); })) 
@@ -266,13 +270,13 @@ namespace Zu.ChromeDevTools
             }
         }
 
-        private void ProcessIncomingMessage(ResponseInfo response)
+        private void ProcessIncomingMessage(JToken message)
         {
-            if (!(response.Result is JObject messageObject)) return;
-            if (messageObject.TryGetValue("id", out JToken idProperty))
+            if (!(message is JObject messageObject)) return;
+            if (messageObject.TryGetValue("id", out var idProperty))
             {
                 var res = new ResponseInfo();
-                if (messageObject.TryGetValue("error", out JToken errorProperty))
+                if (messageObject.TryGetValue("error", out var errorProperty))
                 {
                     res.IsError = true;
                     res.Result = errorProperty;
@@ -285,26 +289,26 @@ namespace Zu.ChromeDevTools
                 long commandId = idProperty.Value<long>();
                 if (_messages.TryGetValue(commandId, out var promise))
                 {
-                    promise.SetResult(res);
+                    promise.TrySetResult(res);
                 }
                 else
                 {
                     Debug.Fail(string.Format(CultureInfo.CurrentCulture, "Invalid response identifier '{0}'", commandId));
                 }
-                LogTrace("Recieved Response {id}: {message}", commandId, res.Result.ToString());
+                LogTrace("Received Response {id}: {message}", commandId, res.Result.ToString());
                 return;
             }
 
-            if (messageObject.TryGetValue("method", out JToken methodProperty))
+            if (messageObject.TryGetValue("method", out var methodProperty))
             {
                 var method = methodProperty.Value<string>();
                 var eventData = messageObject["params"];
-                LogTrace("Recieved Event {method}: {params}", method, eventData.ToString());
+                LogTrace("Received Event {method}: {params}", method, eventData.ToString());
                 RaiseEvent(method, eventData);
                 return;
             }
 
-            //LogTrace("Recieved Other: {message}", message);
+            //LogTrace("Received Other: {message}", message);
         }
 
         private void LogTrace(string message, params object[] args)
@@ -333,14 +337,36 @@ namespace Zu.ChromeDevTools
         {
             try
             {
-                var responseInfo = new ResponseInfo { Result = JToken.Parse(e.Message) };
-                ProcessIncomingMessage(responseInfo);
+                ProcessIncomingMessage(JToken.Parse(e.Message));
             }
             catch
             {
                 // ignored
             }
         }
+
+        private void Ws_Closed(object sender, EventArgs e)
+        {
+            CancelAllRunningCommands("Chrome session socket closed.");
+        }
+
+        private void CancelAllRunningCommands(string reason)
+        {
+            var res = new ResponseInfo
+            {
+                IsError = true,
+                Result = new JObject(
+                    new JProperty("message", reason),
+                    new JProperty("data", null),
+                    new JProperty("code", 0))
+            };
+
+            foreach (var promise in _messages.Values)
+            {
+                promise.TrySetResult(res);
+            }
+        }
+
         #endregion
 
         #region IDisposable Support
@@ -352,6 +378,8 @@ namespace Zu.ChromeDevTools
             {
                 if (disposing)
                 {
+                    CancelAllRunningCommands("Disposing ChromeSession");
+
                     //Clear all subscribed events.
                     _eventHandlers.Clear();
                     _eventTypeMap.Clear();
@@ -361,6 +389,7 @@ namespace Zu.ChromeDevTools
                         _sessionSocket.Opened -= Ws_Opened;
                         _sessionSocket.Error -= Ws_Error;
                         _sessionSocket.MessageReceived -= Ws_MessageReceived;
+                        _sessionSocket.Closed -= Ws_Closed;
                         _sessionSocket.Dispose();
                         _sessionSocket = null;
                     }
