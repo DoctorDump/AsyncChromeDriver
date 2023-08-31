@@ -28,7 +28,7 @@ namespace Zu.Chrome
         {
             foreach (var rootFolder in new[] { "%ProgramFiles%", "%ProgramFiles(x86)%", "%LocalAppData%"})
             {
-                var path = Path.Combine(rootFolder, @"Google\Chrome\Application\chrome.exe");
+                var path = Path.Combine(Environment.ExpandEnvironmentVariables(rootFolder), @"Google\Chrome\Application\chrome.exe");
                 if (File.Exists(path))
                     return path;
             }
