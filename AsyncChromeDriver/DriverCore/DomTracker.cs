@@ -3,6 +3,7 @@
 
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using Zu.ChromeDevTools.DOM;
 
 namespace Zu.Chrome.DriverCore
@@ -68,7 +69,9 @@ namespace Zu.Chrome.DriverCore
         private /*async*/ void OnDocumentUpdatedEvent(DocumentUpdatedEvent ev)
         {
             _nodeToFrame.Clear();
-            _devTools?.DOM.GetDocument(new GetDocumentCommand());
+            _devTools?.DOM.GetDocument(new GetDocumentCommand())
+                // Fixing UnobservedTaskException
+                .ContinueWith(t => Trace.TraceWarning($"OnDocumentUpdatedEvent: {t.Exception} was ignored"), TaskContinuationOptions.OnlyOnFaulted);
         }
     }
 }
