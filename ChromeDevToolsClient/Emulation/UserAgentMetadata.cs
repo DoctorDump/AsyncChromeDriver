@@ -61,13 +61,11 @@ namespace Zu.ChromeDevTools.Emulation
             get; 
             set;
         }
-        /* По факту на 24.10.2023 не передаётся, не понятно что туда ставить, true или false
         [JsonProperty("wow64", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool Wow64
         {
             get; 
             set;
         }
-        */
     }
 }
