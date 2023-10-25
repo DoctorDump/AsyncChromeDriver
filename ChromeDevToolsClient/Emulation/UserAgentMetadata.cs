@@ -13,6 +13,12 @@ namespace Zu.ChromeDevTools.Emulation
             get; 
             set;
         }
+        [JsonProperty("fullVersionList", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public UserAgentBrandVersion[] FullVersionList
+        {
+            get; 
+            set;
+        }
         [JsonProperty("fullVersion", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public string FullVersion
         {
@@ -49,5 +55,19 @@ namespace Zu.ChromeDevTools.Emulation
             get; 
             set;
         }
+        [JsonProperty("bitness", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string Bitness
+        {
+            get; 
+            set;
+        }
+        /* По факту на 24.10.2023 не передаётся, не понятно что туда ставить, true или false
+        [JsonProperty("wow64", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool Wow64
+        {
+            get; 
+            set;
+        }
+        */
     }
 }
