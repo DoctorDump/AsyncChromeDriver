@@ -91,15 +91,14 @@ namespace Zu.ChromeDevTools
         /// <param name="command"></param>
         /// <param name="cancellationToken"></param>
         /// <param name="millisecondsTimeout"></param>
-        /// <param name="throwExceptionIfResponseNotReceived"></param>
         /// <returns></returns>
-        public async Task<ICommandResponse<TCommand>> SendCommand<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken), int? millisecondsTimeout = null, bool throwExceptionIfResponseNotReceived = true)
+        public async Task<ICommandResponse<TCommand>> SendCommand<TCommand>(TCommand command, CancellationToken cancellationToken = default(CancellationToken), int? millisecondsTimeout = null)
             where TCommand : ICommand
         {
             if (command == null)
                 throw new ArgumentNullException(nameof(command));
 
-            var result = await SendCommand(command.CommandName, JToken.FromObject(command), cancellationToken, millisecondsTimeout, throwExceptionIfResponseNotReceived);
+            var result = await SendCommand(command.CommandName, JToken.FromObject(command), cancellationToken, millisecondsTimeout);
 
             if (result == null)
                 return null;
@@ -113,21 +112,22 @@ namespace Zu.ChromeDevTools
         /// <summary>
         /// Sends the specified command and returns the associated command response.
         /// </summary>
-        /// <typeparam name="TCommand"></typeparam
+        /// <typeparam name="TCommand"></typeparam>
         /// <typeparam name="TCommandResponse"></typeparam>
         /// <param name="command"></param>
         /// <param name="cancellationToken"></param>
         /// <param name="millisecondsTimeout"></param>
-        /// <param name="throwExceptionIfResponseNotReceived"></param>
+        /// <param name="throwExceptionIfResponseNotReceived">Ignored parameter, function always throw</param>
         /// <returns></returns>
         public async Task<TCommandResponse> SendCommand<TCommand, TCommandResponse>(TCommand command, CancellationToken cancellationToken = default(CancellationToken), int? millisecondsTimeout = null, bool throwExceptionIfResponseNotReceived = true)
             where TCommand : ICommand
             where TCommandResponse : ICommandResponse<TCommand>
         {
+            Debug.Assert(throwExceptionIfResponseNotReceived, nameof(throwExceptionIfResponseNotReceived) + " is ignored!");
             if (command == null)
                 throw new ArgumentNullException(nameof(command));
 
-            var result = await SendCommand(command.CommandName, JToken.FromObject(command), cancellationToken, millisecondsTimeout, throwExceptionIfResponseNotReceived);
+            var result = await SendCommand(command.CommandName, JToken.FromObject(command), cancellationToken, millisecondsTimeout);
 
             if (result == null)
                 return default(TCommandResponse);
@@ -143,11 +143,11 @@ namespace Zu.ChromeDevTools
         /// <param name="commandName"></param>
         /// <param name="params"></param>
         /// <param name="cancellationToken"></param>
-        /// <param name="millisecondsTimeout"></param>
-        /// <param name="throwExceptionIfResponseNotReceived"></param>
+        /// <param name="millisecondsTimeout">Timeout in milliseconds. <see cref="ChromeSession.CommandTimeout"/> if null</param>
         /// <returns></returns>
+        /// <exception cref="OperationCanceledException"/>
         //[DebuggerStepThrough]
-        public virtual async Task<JToken> SendCommand(string commandName, JToken @params, CancellationToken cancellationToken = default(CancellationToken), int? millisecondsTimeout = null, bool throwExceptionIfResponseNotReceived = true)
+        public virtual async Task<JToken> SendCommand(string commandName, JToken @params, CancellationToken cancellationToken = default, int? millisecondsTimeout = null)
         {
             if (_isDisposed)
                 throw new ObjectDisposedException(nameof(ChromeSession), $"Trying to call {nameof(SendCommand)} on disposed object.");
@@ -160,45 +160,36 @@ namespace Zu.ChromeDevTools
                 @params = @params
             };
 
-            if (millisecondsTimeout.HasValue == false)
-                millisecondsTimeout = CommandTimeout;
+            var timeoutCt = new CancellationTokenSource(millisecondsTimeout ?? CommandTimeout).Token;
+            cancellationToken = cancellationToken != CancellationToken.None 
+                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCt).Token 
+                : timeoutCt;
 
             await OpenSessionConnection(cancellationToken);
 
             LogTrace("Sending {id} {method}: {params}", message.id, message.method, @params?.ToString());
 
+            var promise = new TaskCompletionSource<ResponseInfo>();
+            _messages.TryAdd(id, promise);
+            cancellationToken.Register(() =>
+            {
+                _messages.TryUpdate(id, null, promise);
+                promise.TrySetCanceled();
+            }, false);
+
             var contents = JsonConvert.SerializeObject(message);
+            _sessionSocket.Send(contents);
 
-            ResponseInfo res = null;
-            try
-            {
-
-                TaskCompletionSource<ResponseInfo> promise = _messages.GetOrAdd(id, i => new TaskCompletionSource<ResponseInfo>());
-                _sessionSocket.Send(contents);
-                cancellationToken.ThrowIfCancellationRequested();
-
-                cancellationToken.Register(() => promise.TrySetCanceled(), false);
-
-                res = await promise.Task.ConfigureAwait(false);
-                cancellationToken.ThrowIfCancellationRequested();
-
-            }
-            finally
-            {
-                _messages.TryRemove(id, out _);
-            }
+            var res = await promise.Task.ConfigureAwait(false); // throws OperationCanceledException when cancellationToken signalled
+            _messages.TryRemove(id, out _);
 
             if (res.IsError)
             {
                 var errorMessage = res.Result.Value<string>("message");
                 var errorData = res.Result.Value<string>("data");
 
-                var exceptionMessage = $"{commandName}: {errorMessage}";
-                if (!String.IsNullOrWhiteSpace(errorData))
-                    exceptionMessage = $"{exceptionMessage} - {errorData}";
-
                 LogTrace("Received Error Response {id}: {message} {data}", message.id, message, errorData);
-                throw new CommandResponseException(exceptionMessage)
+                throw new CommandResponseException($"{commandName}: {errorMessage}{(string.IsNullOrWhiteSpace(errorData) ? "" : $" - {errorData}")}")
                 {
                     Code = res.Result.Value<long>("code")
                 };
@@ -286,16 +277,20 @@ namespace Zu.ChromeDevTools
                     res.Result = messageObject["result"];
                 }
 
-                long commandId = idProperty.Value<long>();
-                if (_messages.TryGetValue(commandId, out var promise))
+                var commandId = idProperty.Value<long>();
+                if (!_messages.TryRemove(commandId, out var promise))
                 {
-                    promise.TrySetResult(res);
+                    LogError("Received unknown response {id}: {message}", commandId, res.Result.ToString());
+                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "Received unknown response identifier '{0}'", commandId));
+                    return;
                 }
-                else
+                if (promise == null) // SendCommand waiting was cancelled by CancellationToken
                 {
-                    Debug.Fail(string.Format(CultureInfo.CurrentCulture, "Invalid response identifier '{0}'", commandId));
+                    LogTrace("Received skipped response {id}: {message}", commandId, res.Result.ToString());
+                    return;
                 }
-                LogTrace("Received Response {id}: {message}", commandId, res.Result.ToString());
+                promise.TrySetResult(res);
+                LogTrace("Received response {id}: {message}", commandId, res.Result.ToString());
                 return;
             }
 
