@@ -358,6 +358,8 @@ namespace Zu.ChromeDevTools
 
             foreach (var promise in _messages.Values)
             {
+                if (promise == null)
+                    continue;
                 promise.TrySetResult(res);
             }
         }
