@@ -83,14 +83,15 @@ namespace Zu.Chrome.DriverCore
         {
             var value = GetResultOrThrow(res).Value;
             ThrowWhenBadStatus(value as JToken);
-            var value = (value as JObject)?["value"];
+            var v = (value as JObject)?["value"];
+            string str;
             try
             {
-                var str = ((string)value); // may throw ArgumentException at Newtonsoft.Json.Linq.JToken.op_Explicit of value is not string
+                str = (string)v; // may throw ArgumentException at Newtonsoft.Json.Linq.JToken.op_Explicit of value is not string
             }
             catch (ArgumentException e)
             {
-                throw new ArgumentException("Result is not string: " + (value as JToken).ToString(), nameof(res), e);
+                throw new ArgumentException("Result is not string: " + (value as JToken)?.ToString(), nameof(res), e);
             }
             return str?.Replace("\n", "\r\n").Replace("\r\r", "\r");
         }
