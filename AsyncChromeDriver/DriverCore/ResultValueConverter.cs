@@ -83,7 +83,16 @@ namespace Zu.Chrome.DriverCore
         {
             var value = GetResultOrThrow(res).Value;
             ThrowWhenBadStatus(value as JToken);
-            return ((string)(value as JObject)?["value"])?.Replace("\n", "\r\n").Replace("\r\r", "\r");
+            var value = (value as JObject)?["value"];
+            try
+            {
+                var str = ((string)value); // may throw ArgumentException at Newtonsoft.Json.Linq.JToken.op_Explicit of value is not string
+            }
+            catch (ArgumentException e)
+            {
+                throw new ArgumentException("Result is not string: " + (value as JToken).ToString(), nameof(res), e);
+            }
+            return str?.Replace("\n", "\r\n").Replace("\r\r", "\r");
         }
 
         internal static JToken AsJToken(this EvaluateCommandResponse res)
