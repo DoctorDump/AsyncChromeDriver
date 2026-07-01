@@ -55,11 +55,18 @@ namespace Zu.Chrome.DriverCore
             return $"{{\"left\": {rect.X}, \"top\": {rect.Y}, \"width\": {rect.Width}, \"height\": {rect.Height} }}";
         }
 
-        public async Task<string> ScrollElementIntoView(string elementId, CancellationToken cancellationToken = new CancellationToken())
+        private async Task ScrollElementIntoView(string elementId, CancellationToken cancellationToken = new CancellationToken())
         {
+            /* scrollIntoView returns a Promise that fulfills with an object containing the following property:
+                 interrupted
+                   A boolean value indicating whether the scrolling operation was interrupted (true) or not (false). Such an interruption typically happens
+                   when a programmatic scroll is ongoing, and another programmatic scroll is initiated on the same element before the first one finishes.
+               Before Chrome 150 returns undefined
+            */
             // center is used because some overlays (like navigation bars or 'Accept our cookie policy' messaged) may hide target element.
-            var func = "function(elem) { return elem.scrollIntoView({block: 'center', inline: 'nearest'}); }";
-            return (await WebView.CallFunction(func, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false)).AsString();
+            var func = "function(elem) { return elem.scrollIntoView({behavior: 'instant', block: 'center', inline: 'nearest'}); }";
+            var promise = (await WebView.CallFunction(func, $"{{\"{Session.GetElementKey()}\":\"{elementId}\"}}", Session?.GetCurrentFrameId(), true, false, cancellationToken).ConfigureAwait(false)).AsJToken();
+            // TODO: Should wait for promise somehow and return `interrupted`. Maybe using WebView.CallUserAsyncFunction?
         }
 
         public async Task<WebPoint> ScrollElementRegionIntoViewHelper(string elementId, WebRect region, bool center = true, string clickableElementId = null, CancellationToken cancellationToken = new CancellationToken())
