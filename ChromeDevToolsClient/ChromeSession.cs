@@ -16,7 +16,7 @@ namespace Zu.ChromeDevTools
     public partial class ChromeSession : IDisposable
     {
         private readonly string _endpointAddress;
-        private readonly ILogger<ChromeSession> _logger;
+        private readonly ILogger _logger;
         private readonly ConcurrentDictionary<string, ConcurrentBag<Action<object>>> _eventHandlers = new ConcurrentDictionary<string, ConcurrentBag<Action<object>>>();
         private readonly ConcurrentDictionary<Type, string> _eventTypeMap = new ConcurrentDictionary<Type, string>();
 
@@ -58,7 +58,7 @@ namespace Zu.ChromeDevTools
         /// </summary>
         /// <param name="logger"></param>
         /// <param name="endpointAddress"></param>
-        public ChromeSession(ILogger<ChromeSession> logger, string endpointAddress)
+        public ChromeSession(ILogger logger, string endpointAddress)
             : this()
         {
             if (String.IsNullOrWhiteSpace(endpointAddress))

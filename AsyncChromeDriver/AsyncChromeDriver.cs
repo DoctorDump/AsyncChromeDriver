@@ -135,7 +135,7 @@ namespace Zu.Chrome
             set;
         }
 
-        static Random _rnd = new Random();
+        private static Random _rnd = new Random();
         public AsyncChromeDriver(bool openInTempDir = true) : this(11000 + _rnd.Next(2000))
         {
             Config.SetIsTempProfile(openInTempDir);
@@ -155,7 +155,7 @@ namespace Zu.Chrome
         {
         }
 
-        public AsyncChromeDriver(ChromeDriverConfig config, ILogger<ChromeSession> logger = null)
+        public AsyncChromeDriver(ChromeDriverConfig config, ILogger logger = null)
         {
             Config = config;
             if (Config.Port == 0)
@@ -191,10 +191,9 @@ namespace Zu.Chrome
             WindowCommands = new WindowCommands(this);
         }
 
-        public virtual async Task<string> Connect(CancellationToken ct = default)
+        public virtual async Task<string> Connect(CancellationToken ct)
         {
-            // While having CancellationToken here - is always default, because SyncWebDriver.Open - has no CancellationToken at all.
-            // So use manual timeout 1 minute that should be enough to start or to fail (Chrome may start slowly for first time).
+            // Use manual timeout 1 minute that should be enough to start or to fail (Chrome may start slowly for first time).
             ct = CancellationTokenSource.CreateLinkedTokenSource(ct, new CancellationTokenSource(TimeSpan.FromMinutes(1)).Token).Token;
 
             IsConnected = true;
@@ -229,7 +228,7 @@ namespace Zu.Chrome
             await BrowserDevTools.Navigation.GoToUrl(GetBrowserDevToolsUrl()).ConfigureAwait(false);
         }
 
-        public async Task CheckConnected(CancellationToken cancellationToken = default(CancellationToken))
+        public async Task CheckConnected(CancellationToken cancellationToken = default)
         {
             if (!DoConnectWhenCheckConnected)
                 return;
@@ -239,7 +238,7 @@ namespace Zu.Chrome
             }
         }
 
-        private async Task<ChromeProcessInfo> OpenChromeProfile(ChromeDriverConfig config)
+        private static async Task<ChromeProcessInfo> OpenChromeProfile(ChromeDriverConfig config)
         {
             ChromeProcessInfo res = null;
             await Task.Run(() => res = ChromeProfilesWorker.OpenChromeProfile(config)).ConfigureAwait(false); // userDir, Port, isHeadless));

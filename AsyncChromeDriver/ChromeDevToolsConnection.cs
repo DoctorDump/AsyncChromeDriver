@@ -15,7 +15,7 @@ namespace Zu.Chrome
     {
         private bool _isDisconnected;
         private ChromeSession _session;
-        protected readonly ILogger<ChromeSession> _logger;
+        protected readonly ILogger _logger;
 
         public int Port {
             get;
@@ -76,7 +76,7 @@ namespace Zu.Chrome
         public ChromeDevTools.HeapProfiler.HeapProfilerAdapter HeapProfiler => Session.HeapProfiler;
         #endregion
 
-        public ChromeDevToolsConnection(int port = 5999, ILogger<ChromeSession> logger = null)
+        public ChromeDevToolsConnection(int port = 5999, ILogger logger = null)
         {
             Port = port;
             _logger = logger;
@@ -88,13 +88,12 @@ namespace Zu.Chrome
             Session = new ChromeSession(_logger, endpointUrl);
         }
 
-        protected static async Task<string> GetEndpointUrl(int port, CancellationToken ct)
+        protected async Task<string> GetEndpointUrl(int port, CancellationToken ct)
         {
             var webClient = new HttpClient();
             var uriBuilder = new UriBuilder { Scheme = "http", Host = "127.0.0.1", Port = port, Path = "/json" };
 
-            var s = Stopwatch.StartNew();
-            while (true)
+            while (!ct.IsCancellationRequested)
             {
                 try
                 {
@@ -104,21 +103,22 @@ namespace Zu.Chrome
                     var endpointUrl = sessions.FirstOrDefault(session => session.Type == "page")?.WebSocketDebuggerUrl;
                     if (endpointUrl != null) 
                         return endpointUrl;
-                    
-                    if (s.Elapsed > TimeSpan.FromSeconds(10))
-                        throw new Exception("Cannot get page session from Chrome");
+                    _logger?.LogTrace($"Got sessions: {string.Join(", ", sessions.Select(s => $"{s.Type} #{s.Id} {s.Title} {s.Description} {s.DevToolsFrontendUrl} {s.WebSocketDebuggerUrl}"))}", null);
                 }
                 catch (HttpRequestException ex)
                 {
-                    if ((ex.InnerException as WebException)?.Status != WebExceptionStatus.ConnectFailure || s.Elapsed > TimeSpan.FromSeconds(10))
+                    if ((ex.InnerException as WebException)?.Status != WebExceptionStatus.ConnectFailure || ct.IsCancellationRequested)
                         throw;
+                    _logger?.LogError($"Cannot connect to Chrome: {ex.Message}");
                     // If browser starts slowly can get:
                     // System.Net.Http.HttpRequestException: Произошла ошибка при отправке запроса.
                     //   System.Net.WebException: Невозможно соединиться с удаленным сервером
                     //     System.Net.Sockets.SocketException: Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение 127.0.0.1:14683
                 }
-                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                _logger?.LogTrace("Waiting 500ms until next try...");
+                await Task.Delay(TimeSpan.FromMilliseconds(500), ct);
             }
+            throw new OperationCanceledException("Cannot get page session from Chrome");
         }
 
         public virtual void Disconnect()

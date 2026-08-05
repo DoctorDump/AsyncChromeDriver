@@ -18,13 +18,13 @@ namespace Zu.Chrome.BrowserDevTools
 
         public ProxyWS Proxy  { get; private set; }
 
-        public ChromeDevToolsConnectionProxy(int port = 5999, int port2 = 5888, ChromeDevTools.ILogger<ChromeSession> logger = null) : base(port, logger)
+        public ChromeDevToolsConnectionProxy(int port = 5999, int port2 = 5888, ILogger logger = null) : base(port, logger)
         {
             Port2 = port2;
         }
 
         static Random _rnd = new Random();
-        public ChromeDevToolsConnectionProxy(int port = 5999, int port2 = 5888, ChromeWSProxyConfig wsProxyConfig = null, ChromeDevTools.ILogger<ChromeSession> logger = null) : this(port, port2, logger)
+        public ChromeDevToolsConnectionProxy(int port = 5999, int port2 = 5888, ChromeWSProxyConfig wsProxyConfig = null, ILogger logger = null) : this(port, port2, logger)
         {
             _wsProxyConfig = wsProxyConfig ?? new ChromeWSProxyConfig();
             if (_wsProxyConfig.HttpServerPort == 0)

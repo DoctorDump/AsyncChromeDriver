@@ -10,9 +10,9 @@ namespace Zu.Chrome.DriverCore
 {
     public class ElementCommands
     {
-        private WebView _webView;
-        private ElementUtils _elementUtils;
-        private AsyncChromeDriver _asyncChromeDriver;
+        private readonly WebView _webView;
+        private readonly ElementUtils _elementUtils;
+        private readonly AsyncChromeDriver _asyncChromeDriver;
         public Session Session
         {
             get;

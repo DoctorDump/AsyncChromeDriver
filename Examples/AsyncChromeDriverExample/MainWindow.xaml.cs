@@ -34,7 +34,7 @@ namespace AsyncChromeDriverExample
             {
                 asyncChromeDriver = new AsyncChromeDriver();
                 webDriver = new WebDriver(asyncChromeDriver);
-                await asyncChromeDriver.Connect();
+                await asyncChromeDriver.Connect(CancellationToken.None);
                 tbDevToolsRes.Text = "opened";
                 tbDevToolsRes2.Text = $"opened on port {asyncChromeDriver.Port} in dir {asyncChromeDriver.UserDir} \nWhen close, dir will be DELETED";
             }
@@ -320,7 +320,7 @@ namespace AsyncChromeDriverExample
                 }
                 else asyncChromeDriver = new AsyncChromeDriver(userDir);
                 webDriver = new WebDriver(asyncChromeDriver);
-                await asyncChromeDriver.Connect(); // browser opens here
+                await asyncChromeDriver.Connect(CancellationToken.None); // browser opens here
                 // await webDriver.GoToUrl("https://www.google.com/"); // browser opens here
                 var mess = $"opened on port {asyncChromeDriver.Port} in dir {asyncChromeDriver.UserDir} \nWhen close, dir will NOT be deleted";
                 tbDevToolsRes.Text = mess;
@@ -380,7 +380,7 @@ namespace AsyncChromeDriverExample
                 }
                 else asyncChromeDriver = new AsyncChromeDriver();
                 webDriver = new WebDriver(asyncChromeDriver);
-                await asyncChromeDriver.Connect(); // browser opens here
+                await asyncChromeDriver.Connect(CancellationToken.None); // browser opens here
                                                    // await webDriver.GoToUrl("https://www.google.com/"); // browser opens here
                 var mess = $"opened on port {asyncChromeDriver.Port} in dir {asyncChromeDriver.UserDir} \nWhen close, dir will be DELETED";
                 tbDevToolsRes.Text = mess;
@@ -407,7 +407,7 @@ namespace AsyncChromeDriverExample
                 }
                 else asyncChromeDriver = new AsyncChromeDriver(new ChromeDriverConfig());
                 webDriver = new WebDriver(asyncChromeDriver);
-                await asyncChromeDriver.Connect(); // browser opens here
+                await asyncChromeDriver.Connect(CancellationToken.None); // browser opens here
                                                    // await webDriver.GoToUrl("https://www.google.com/"); // browser opens here
                 var mess = $"opened on port {asyncChromeDriver.Port} in dir {asyncChromeDriver.UserDir} \nWhen close, dir will NOT be deleted";
                 tbDevToolsRes.Text = mess;
@@ -450,7 +450,7 @@ namespace AsyncChromeDriverExample
             {
                 asyncChromeDriver = new AsyncChromeDriver(new ChromeDriverConfig().SetDoOpenWSProxy().SetPort(14392));
                 webDriver = new WebDriver(asyncChromeDriver);
-                await asyncChromeDriver.Connect();
+                await asyncChromeDriver.Connect(CancellationToken.None);
                 tbDevToolsRes.Text = "opened";
                 tbDevToolsRes2.Text = $"opened on port {asyncChromeDriver.Port} in dir {asyncChromeDriver.UserDir} \nWhen close, dir will be DELETED";
             }
@@ -472,7 +472,7 @@ namespace AsyncChromeDriverExample
             //asyncChromeDriver.isConnected = true;
             //await asyncChromeDriver.DevTools.Connect();
             asyncChromeDriverDev = new AsyncChromeDriver();
-            await asyncChromeDriverDev.Connect();
+            await asyncChromeDriverDev.Connect(CancellationToken.None);
             await asyncChromeDriverDev.Navigation.GoToUrl(asyncChromeDriver.GetBrowserDevToolsUrl());
         }
 
@@ -488,7 +488,7 @@ namespace AsyncChromeDriverExample
             {
                 asyncChromeDriver = new AsyncChromeDriver(new ChromeDriverConfig().SetDoOpenBrowserDevTools());
                 webDriver = new WebDriver(asyncChromeDriver);
-                await asyncChromeDriver.Connect();
+                await asyncChromeDriver.Connect(CancellationToken.None);
                 tbDevToolsRes.Text = "opened";
                 tbDevToolsRes2.Text = $"opened on port {asyncChromeDriver.Port} in dir {asyncChromeDriver.UserDir} \nWhen close, dir will be DELETED";
             }
@@ -516,7 +516,7 @@ namespace AsyncChromeDriverExample
                 asyncChromeDriver = new AsyncChromeDriver(new ChromeDriverConfig().SetDoOpenBrowserDevTools());
                 asyncChromeDriver.BrowserDevToolsConfig = new ChromeDriverConfig().SetDoOpenBrowserDevTools();
                 webDriver = new WebDriver(asyncChromeDriver);
-                await asyncChromeDriver.Connect();
+                await asyncChromeDriver.Connect(CancellationToken.None);
                 tbDevToolsRes.Text = "opened";
             }
             catch (Exception ex)
@@ -541,7 +541,7 @@ namespace AsyncChromeDriverExample
                     .SetWSProxyConfig(new ChromeWSProxyConfig { HttpServerSaveRequestedFiles = true })
                     );
                 webDriver = new WebDriver(asyncChromeDriver);
-                await asyncChromeDriver.Connect();
+                await asyncChromeDriver.Connect(CancellationToken.None);
                 tbDevToolsFilesDir.Text = Path.Combine( asyncChromeDriver.Config.WSProxyConfig.DevToolsFilesDir, "devtools");
                 tbDevToolsRes.Text = "opened";
             }
@@ -566,7 +566,7 @@ namespace AsyncChromeDriverExample
                     .SetWSProxyConfig(new ChromeWSProxyConfig { DevToolsFilesDir = dir, HttpServerTryFindRequestedFileLocaly = true })
                     );
                 webDriver = new WebDriver(asyncChromeDriver);
-                await asyncChromeDriver.Connect();
+                await asyncChromeDriver.Connect(CancellationToken.None);
                 tbDevToolsRes.Text = "opened";
             }
             catch (Exception ex)

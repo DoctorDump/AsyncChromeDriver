@@ -1,15 +1,8 @@
 ﻿namespace Zu.ChromeDevTools
 {
-    public class ILogger<T>
+    public interface ILogger
     {
-        public virtual void LogTrace(string message, object[] args)
-        {
-            
-        }
-
-        public virtual void LogError(string message, object[] args)
-        {
-
-        }
+        void LogTrace(string message, params object[] args);
+        void LogError(string message, params object[] args);
     }
 }

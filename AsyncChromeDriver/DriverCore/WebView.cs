@@ -125,7 +125,7 @@ namespace Zu.Chrome.DriverCore
         public async Task<string> Reload(CancellationToken cancellationToken = default (CancellationToken))
         {
             if (_asyncChromeDriver != null)
-                await _asyncChromeDriver.CheckConnected().ConfigureAwait(false);
+                await _asyncChromeDriver.CheckConnected(cancellationToken).ConfigureAwait(false);
             var res = await DevTools.Page.Reload(new ReloadCommand(), cancellationToken).ConfigureAwait(false);
             return res.ToString();
         }
@@ -133,7 +133,7 @@ namespace Zu.Chrome.DriverCore
         public async Task<NavigateToHistoryEntryCommandResponse> TraverseHistory(int delta, CancellationToken cancellationToken = default (CancellationToken))
         {
             if (_asyncChromeDriver != null)
-                await _asyncChromeDriver.CheckConnected().ConfigureAwait(false);
+                await _asyncChromeDriver.CheckConnected(cancellationToken).ConfigureAwait(false);
             var res = await DevTools.Page.GetNavigationHistory(new GetNavigationHistoryCommand(), cancellationToken).ConfigureAwait(false);
             if (delta == -1)
             {
@@ -181,7 +181,7 @@ namespace Zu.Chrome.DriverCore
         public async Task DispatchKeyEvents(string keys, CancellationToken cancellationToken = default (CancellationToken))
         {
             if (_asyncChromeDriver != null)
-                await _asyncChromeDriver.CheckConnected().ConfigureAwait(false);
+                await _asyncChromeDriver.CheckConnected(cancellationToken).ConfigureAwait(false);
 
             // Sometimes only first symbol entered with DispatchKeyEvent and the rest symbols are ignored for unknown reason (maybe some additional page script works incorrectly)
             // But InsertText works correctly!
