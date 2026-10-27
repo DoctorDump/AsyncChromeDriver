@@ -43,6 +43,15 @@ namespace Zu.ChromeDevTools.Page
             set;
         }
         /// <summary>
+        /// Capture the screenshot beyond the viewport. Defaults to false.
+        /// </summary>
+        [JsonProperty("captureBeyondViewport", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool? CaptureBeyondViewport
+        {
+            get;
+            set;
+        }
+        /// <summary>
         /// Capture the screenshot from the surface, rather than the view. Defaults to true.
         /// </summary>
         [JsonProperty("fromSurface", DefaultValueHandling = DefaultValueHandling.Ignore)]
